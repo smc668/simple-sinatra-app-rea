@@ -1,0 +1,76 @@
+---
+# Run this with ansible-playbook: 
+# $ ansible-playbook config_inst.yml -v
+# The play operates on the local (Ansible control) machine.
+- hosts: rea_simple_sinatra_app
+  remote_user: ec2-user
+  become: true
+
+  vars:
+      aws_region: us-west-2
+      tag_name: rea_simple_sinatra_app
+
+  tasks:
+    - name: Install git
+      yum: name=git state=latest
+
+    - name: Install fail2ban
+      yum: name=fail2ban state=latest
+
+    - name: Start fail2ban service
+      service:
+        name: fail2ban
+        state: started
+        enabled: on
+
+    - name: Upgrade all packages
+      yum: name=* state=latest
+
+    - name: Port forwarding
+      copy: src=./iptables dest=/etc/sysconfig/iptables owner=root group=root mode=0600
+
+    - name: Restart iptables
+      service:
+        name: iptables
+        state: restarted
+
+    - name: Create sinatra user
+      user: name=sinatra shell=/bin/bash home=/opt/sinatra 
+
+    - git: repo=git://github.com/tnh/simple-sinatra-app.git dest=/opt/sinatra/simple-sinatra-app clone=yes force=yes
+
+    - name: Set port and environment
+      lineinfile: dest=/opt/sinatra/simple-sinatra-app/helloworld.rb
+                  line='set :port, 8080\nset :environment, :production'
+                  insertbefore='^get'
+                  state=present
+
+    - name: hashbang
+      lineinfile: dest=/opt/sinatra/simple-sinatra-app/helloworld.rb
+                  line='#!/usr/bin/ruby'
+                  insertbefore=BOF
+                  state=present
+                  mode=0700
+
+    - file: path=/opt/sinatra/simple-sinatra-app state=directory recurse=yes owner=sinatra group=sinatra
+
+    - name: bundler gem install
+      gem: name=bundler state=present
+      become_user: sinatra
+
+    - name: sinatra gem install
+      gem: name=sinatra state=present
+      become_user: sinatra
+
+    - name: Copy simple-sinatra-app service
+      copy: src=./helloworld dest=/etc/init.d/helloworld owner=root group=root mode=0755
+
+    - name: Add sinatra service
+      shell: chkconfig --add helloworld
+
+    - name: Updating chkconfig helloworld
+      shell: chkconfig --level 345 helloworld on
+
+    - name: Copy simple-sinatra-app service
+      copy: src=./launch dest=/opt/sinatra/launch owner=sinatra group=sinatra mode=0755
+...

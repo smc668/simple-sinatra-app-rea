@@ -1,0 +1,72 @@
+---
+# Run this with ansible-playbook: 
+# $ ansible-playbook create_inst.yml -v
+# The play operates on the local (Ansible control) machine.
+- name: Stage instance
+  hosts: localhost
+  remote_user: ec2-user
+  gather_facts: False
+
+  vars:
+      tag_name: rea_simple_sinatra_app
+      keypair: rea_sinatra_keypair
+      security_group: rea_sinatra_group
+      aws_region: us-west-2
+      instance_type: t2.micro
+      image: ami-7172b611
+      os_distro: "Amazon Linux AMI 2016.03.3 (HVM), SSD Volume Type"
+
+  tasks:
+  - name: Create security group
+    ec2_group:
+      name: "{{ security_group }}"
+      description: "{{ security_group }}"
+      region: "{{ aws_region }}"
+      rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+      rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+    register: ec2_security_group
+
+  - name: Create key pair
+    ec2_key:
+      name: "{{ keypair }}"
+      region: "{{ aws_region }}"
+    register: ec2_key
+
+  - name: Save key locally
+    copy:
+      content: "{{ ec2_key.key.private_key }}"
+      dest: "~/.keys/{{ keypair }}.pem"
+      mode: 0400
+    when: ec2_key.changed
+
+  - name: Launch instance
+    ec2:
+      keypair: "{{ keypair }}"
+      group: "{{ security_group }}"
+      instance_type: "{{ instance_type }}"
+      region: "{{ aws_region }}"
+      image: "{{ image }}"
+      instance_tags:
+        Name: "{{ tag_name }}"
+      count: 1
+      wait: true
+    register: ec2
+
+  - name: Add new instance to host group
+    add_host: hostname="{{ item.public_ip }}" groupname="REA_Simple_Sinatra_App"
+    with_items: "{{ ec2.instances }}"
+
+  - name: Wait for the instances to boot by checking the ssh port
+    wait_for: host="{{ item.public_dns_name }}" port=22 delay=60 timeout=320 state=started
+    with_items: "{{ ec2.instances }}"
+...

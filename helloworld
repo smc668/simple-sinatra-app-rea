@@ -1,0 +1,24 @@
+#!/bin/bash
+# chkconfig: 345 99 01
+# description: launches rea simple sinatra app
+
+start() {
+        su - sinatra -c /opt/sinatra/launch
+}
+
+stop() {
+        pkill helloworld.rb
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+esac
+exit 0

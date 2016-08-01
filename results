@@ -1,0 +1,114 @@
+[ec2-user@ip-172-31-27-247 playbooks]$ ansible-playbook create_inst.yml && . ~/.anrc && /etc/ansible/ec2.py --refresh-cache && ansible-playbook config_inst.yml && ansible -m ec2_facts rea_simple_sinatra_app | egrep 'instance_id|public_ipv4s'| awk -F: '{print $2}'
+
+PLAY [Stage instance] **********************************************************
+
+TASK [Create security group] ***************************************************
+changed: [localhost]
+
+TASK [Create key pair] *********************************************************
+changed: [localhost]
+
+TASK [save private key] ********************************************************
+changed: [localhost]
+
+TASK [Launch instance] *********************************************************
+changed: [localhost]
+
+TASK [Add new instance to host group] ******************************************
+changed: [localhost] 
+
+TASK [Wait for the instances to boot by checking the ssh port] *****************
+ok: [localhost] 
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=6    changed=5    unreachable=0    failed=0   
+
+All identities removed.
+Identity added: /home/ec2-user/.keys/AWS-Ansible_controller.pem (/home/ec2-user/.keys/AWS-Ansible_controller.pem)
+Identity added: /home/ec2-user/.keys/rea_sinatra_keypair.pem (/home/ec2-user/.keys/rea_sinatra_keypair.pem)
+Identity added: /home/ec2-user/.keys/rhel72-ansible_controller.pem (/home/ec2-user/.keys/rhel72-ansible_controller.pem)
+{
+  "_meta": {
+    "hostvars": {
+	***REDACTED***
+    "aws_ac", 
+    "rea_simple_sinatra_app", 
+    "rhel7_ac"
+  ]
+}
+
+PLAY [rea_simple_sinatra_app] **************************************************
+
+TASK [setup] *******************************************************************
+ok: [rea_simple_sinatra_app]
+
+TASK [Install git] *************************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [Install fail2ban] ********************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [start fail2ban service] **************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [upgrade all packages] ****************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [forwarding for app] ******************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [Load iptables config] ****************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [create sinatra user] *****************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [git] *********************************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [Set port and environment] ************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [hashbang] ****************************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [file] ********************************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [bundler gem install] *****************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [sinatra gem install] *****************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [copy simple-sinatra-app service] *****************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [add sinatra service] *****************************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [Updating chkconfig helloworld] *******************************************
+changed: [rea_simple_sinatra_app]
+
+TASK [copy simple-sinatra-app service] *****************************************
+changed: [rea_simple_sinatra_app]
+
+PLAY RECAP *********************************************************************
+rea_simple_sinatra_app     : ok=18   changed=17   unreachable=0    failed=0   
+
+ "i-86cd1912", 
+ "52.42.205.16", 
+[ec2-user@ip-172-31-27-247 final]$ ec2-reboot-instances i-86cd1912
+[ec2-user@ip-172-31-27-247 playbooks]$ wget 52.42.205.16
+--2016-07-31 19:52:08--  http://52.42.205.16/
+Connecting to 52.42.205.16:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 12 [text/html]
+Saving to: ‘index.html’
+
+index.html                                           100%[=====================================================================================================================>]      12  --.-KB/s    in 0.003s  
+
+2016-07-31 19:52:08 (3.87 KB/s) - ‘index.html’ saved [12/12]
+
+[ec2-user@ip-172-31-27-247 playbooks]$ cat index.html
+Hello World![ec2-user@ip-172-31-27-247 playbooks]$
